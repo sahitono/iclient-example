@@ -1,0 +1,23 @@
+{
+  "name": "iclient-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel",
+    "build": "parcel build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "source": "src/index.html",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@supermap/iclient-leaflet": "^10.2.0",
+    "bulma": "^0.9.3",
+    "leaflet": "^1.7.1",
+    "leaflet-mouse-position": "^1.2.0"
+  },
+  "devDependencies": {
+    "parcel": "^2.0.1"
+  }
+}
