@@ -1,10 +1,3 @@
-// import L from "leaflet";
-// import {
-//   tiledMapLayer,
-//   featureService,
-//   GetFeaturesBySQLParameters,
-// } from "@supermap/iclient-leaflet";
-
 function getStyleResolutions(bounds) {
   var styleResolutions = [];
   var temp = Math.abs(bounds.left - bounds.right) / 256;
@@ -41,7 +34,24 @@ function showCoords() {
   };
 }
 
-// console.log(crs);
+const FEATURE_SERVICE = L.supermap.featureService(
+  "http://128.199.133.7:8091/iserver/services/data-pama_mtbu/rest/data"
+);
+
+const getFeaturesBySQLPromise = (sqlParam) => {
+  return new Promise((resolve, reject) => {
+    FEATURE_SERVICE.getFeaturesBySQL(
+      sqlParam,
+      function ({ result, error, type }) {
+        if (type !== "processCompleted") {
+          reject(error);
+        } else {
+          resolve(result.features);
+        }
+      }
+    );
+  });
+};
 
 const url =
   "http://128.199.133.7:8091/iserver/services/map-pama_mtbu/rest/maps/T2112_Ortho_Pit_MTBU_UTM48S";
@@ -49,38 +59,19 @@ let map;
 let resultLayer;
 let imageryLayer;
 
-fetch(
-  "http://128.199.133.7:8091/iserver/services/map-pama_mtbu/rest/maps/T2112_Ortho_Pit_MTBU_UTM48S/prjCoordSys/projection/extent.json"
-)
-  .then((res) => res.json())
-  .then(async (data) => {
-    console.log(data);
-    const visableResolution = getStyleResolutions(data);
+async function start() {
+  try {
+    const res = await fetch(
+      "http://128.199.133.7:8091/iserver/services/map-pama_mtbu/rest/maps/T2112_Ortho_Pit_MTBU_UTM48S/prjCoordSys/projection/extent.json"
+    );
+    const data = await res.json();
 
-    // tile and coordinate will be in 32748
+    const visableResolution = getStyleResolutions(data);
     const mapcrs = L.CRS.NonEarthCRS({
       bounds: L.bounds([data.left, data.bottom], [data.right, data.top]),
       resolutions: visableResolution,
       origin: L.point(data.left, data.top),
     });
-
-    // proj4 already available global
-    proj4.defs(
-      "EPSG:32648",
-      "+proj=utm +zone=48 +datum=WGS84 +units=m +no_defs"
-    );
-    proj4.defs(
-      "EPSG:32748",
-      "+proj=utm +zone=48 +south +datum=WGS84 +units=m +no_defs "
-    );
-
-    // tile in 32748 but coordinate in 4326
-    const crs = new L.Proj.CRS("EPSG:32748", {
-      origin: [data.left, data.top],
-      bounds: L.bounds([data.left, data.bottom], [data.right, data.top]),
-    });
-    console.log(crs);
-    console.log(mapcrs);
 
     map = L.map("map", {
       crs: mapcrs,
@@ -89,9 +80,6 @@ fetch(
       zoom: 5,
     });
 
-    imageryLayer = L.supermap.tiledMapLayer(url);
-    imageryLayer.addTo(map);
-
     const sqlParam = new SuperMap.GetFeaturesBySQLParameters({
       queryParameter: {
         name: "T2112_Desain_Pit_MTBUL@pama_mtbu",
@@ -99,29 +87,26 @@ fetch(
       },
       datasetNames: ["pama_mtbu:T2112_Desain_Pit_MTBUL"],
     });
+    const features = await getFeaturesBySQLPromise(sqlParam);
 
-    const FEATURE_SERVICE = L.supermap.featureService(
-      "http://128.199.133.7:8091/iserver/services/data-pama_mtbu/rest/data"
-    );
-
-    const getFeaturesBySQLPromise = () => {
-      return new Promise((resolve, reject) => {
-        FEATURE_SERVICE.getFeaturesBySQL(sqlParam, function ({ result, type }) {
-          if (type !== "processCompleted") {
-            reject("getFeaturesBySQLPromise error");
-          } else {
-            resolve(L.geoJSON(result.features));
-          }
-        });
-      });
-    };
-
-    resultLayer = await getFeaturesBySQLPromise();
+    resultLayer = L.geoJSON(features);
     resultLayer.addTo(map).bindPopup("Date_User");
-    L.control.layers({ image: imageryLayer }, { mtbu: resultLayer }).addTo(map);
+
+    imageryLayer = L.supermap.tiledMapLayer(url);
+    imageryLayer.addTo(map);
+
+    L.control
+      .layers(
+        { image: imageryLayer },
+        { mtbu: resultLayer },
+        { collapsed: false }
+      )
+      .addTo(map);
 
     showCoords();
-  })
-  .catch((err) => {
-    console.log(err);
-  });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+start();
