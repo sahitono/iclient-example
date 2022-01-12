@@ -41,7 +41,6 @@ fetch(
 )
   .then((res) => res.json())
   .then((data) => {
-    console.log(data);
     const visableResolution = getStyleResolutions(data);
 
     // tile and coordinate will be in 32748
@@ -66,8 +65,6 @@ fetch(
       origin: [data.left, data.top],
       bounds: L.bounds([data.left, data.bottom], [data.right, data.top]),
     });
-    console.log(crs);
-    console.log(mapcrs);
 
     map = L.map("map", {
       crs: mapcrs,
@@ -78,63 +75,139 @@ fetch(
       preferCanvas: true,
     });
 
-    featureService(
-      "http://119.8.117.190:8090/iserver/services/data-ecomag_point-2/rest/data"
-    ).getFeaturesBySQL(
-      new GetFeaturesBySQLParameters({
-        queryParameter: {
-          name: "MTBU_Loader_UTM@mtbu_point",
-          attributeFilter: "1=1",
-        },
-        datasetNames: ["mtbu_point:MTBU_Loader_UTM"],
-      }),
-      function (serviceResult) {
-        // console.log(serviceResult);
-        resultLayer = L.geoJSON(serviceResult.result.features, {
-          pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, {
-              radius: 3,
-              fillColor: "#ff7800",
-              color: "#000",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.8,
-            });
-          },
-        })
-          .addTo(map)
-          .bindPopup("MTBU_Loader_UTM");
-      }
-    );
+    // featureService(
+    //   "http://119.8.117.190:8090/iserver/services/data-ecomag_point-2/rest/data"
+    // ).getFeaturesBySQL(
+    //   new GetFeaturesBySQLParameters({
+    //     queryParameter: {
+    //       name: "MTBU_Loader_UTM@mtbu_point",
+    //       attributeFilter: "1=1",
+    //     },
+    //     datasetNames: ["mtbu_point:MTBU_Loader_UTM"],
+    //   }),
+    //   function (serviceResult) {
+    //     // console.log(serviceResult);
+    //     resultLayer = L.geoJSON(serviceResult.result.features, {
+    //       pointToLayer: function (feature, latlng) {
+    //         return L.circleMarker(latlng, {
+    //           radius: 3,
+    //           fillColor: "#ff7800",
+    //           color: "#000",
+    //           weight: 1,
+    //           opacity: 1,
+    //           fillOpacity: 0.8,
+    //         });
+    //       },
+    //     })
+    //       .addTo(map)
+    //       .bindPopup("MTBU_Loader_UTM");
+    //   }
+    // );
+
+    // featureService(
+    //   "http://119.8.117.190:8090/iserver/services/data-ecomag_point-2/rest/data"
+    // ).getFeaturesBySQL(
+    //   new GetFeaturesBySQLParameters({
+    //     queryParameter: {
+    //       name: "MTBU_Surface_UTM_2D@mtbu_point",
+    //       attributeFilter: "1=1",
+    //     },
+    //     datasetNames: ["mtbu_point:MTBU_Surface_UTM_2D"],
+    //     toIndex: 9999999,
+    //     maxFeatures: 9999999,
+    //   }),
+    //   function (serviceResult) {
+    //     console.log(serviceResult);
+    //     resultLayer = L.geoJSON(serviceResult.result.features, {
+    //       pointToLayer: function (feature, latlng) {
+    //         return L.circleMarker(latlng, {
+    //           radius: 3,
+    //           fillColor: "#bf616a",
+    //           color: "#000",
+    //           weight: 1,
+    //           opacity: 1,
+    //           fillOpacity: 0.8,
+    //         });
+    //       },
+    //     })
+    //       .addTo(map)
+    //       .bindPopup("MTBU_Surface_UTM_2D");
+    //   }
+    // );
 
     featureService(
-      "http://119.8.117.190:8090/iserver/services/data-ecomag_point-2/rest/data"
+      "http://119.8.117.190:8090/iserver/services/data-2021_11/rest/data"
     ).getFeaturesBySQL(
-      new GetFeaturesBySQLParameters({
+      new SuperMap.GetFeaturesBySQLParameters({
         queryParameter: {
-          name: "MTBU_Surface_UTM_2D@mtbu_point",
+          name: "T2112_Desain_Pit_MTBUL@2021_11",
           attributeFilter: "1=1",
         },
-        datasetNames: ["mtbu_point:MTBU_Surface_UTM_2D"],
         toIndex: 9999999,
         maxFeatures: 9999999,
+        datasetNames: ["2021_11:T2112_Desain_Pit_MTBUL"],
       }),
       function (serviceResult) {
-        console.log(serviceResult);
-        resultLayer = L.geoJSON(serviceResult.result.features, {
-          pointToLayer: function (feature, latlng) {
-            return L.circleMarker(latlng, {
-              radius: 3,
-              fillColor: "#bf616a",
-              color: "#000",
-              weight: 1,
-              opacity: 1,
-              fillOpacity: 0.8,
-            });
+        console.log(serviceResult.result.features);
+        pit11 = L.geoJSON(serviceResult.result.features, {
+          style: function (feature) {
+            console.log(feature.properties.ColorIndex);
+            if (feature.properties.COLORINDEX === "1") {
+              return {
+                opacity: 1,
+                color: "#FF0000",
+                weight: 2,
+              };
+            } else if (feature.properties.COLORINDEX === "4") {
+              return {
+                opacity: 1,
+                color: "#86E929",
+                weight: 2,
+              };
+            }
+            // switch (feature.properties.ColorIndex) {
+            //   case "1":
+            //     return {
+            //       opacity: 1,
+            //       color: "#FF0000",
+            //       weight: 2,
+            //     };
+
+            //   case "3":
+            //     return {
+            //       opacity: 1,
+            //       color: "#FFC349",
+            //       weight: 2,
+            //     };
+            //   case "4":
+            //     return {
+            //       opacity: 1,
+            //       color: "#86E929",
+            //       weight: 2,
+            //     };
+            //   case "5":
+            //     return {
+            //       opacity: 1,
+            //       color: "#00A0E9",
+            //       weight: 2,
+            //     };
+            //   case "7":
+            //     return {
+            //       opacity: 1,
+            //       color: "#E36C09",
+            //       weight: 2,
+            //     };
+            //   case "30":
+            //     return {
+            //       opacity: 1,
+            //       color: "#D33249",
+            //       weight: 2,
+            //     };
+            // }
           },
         })
           .addTo(map)
-          .bindPopup("MTBU_Surface_UTM_2D");
+          .bindPopup("Informasi: bulan 11");
       }
     );
 
