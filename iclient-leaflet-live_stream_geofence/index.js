@@ -67,6 +67,7 @@ async function getRealtimeData() {
     queryParameter: {
       name: "loader_utm@streaming",
       groupBy: "loader_id",
+      fields: ["SmID as ID", "loader_id", "MAX(gps_time) as time"],
     },
     hasGeometry: false,
     maxFeatures: 999999,
@@ -75,7 +76,7 @@ async function getRealtimeData() {
   });
 
   const features = await getFeaturesBySQLPromise(
-    "http://103.193.14.22:8090/iserver/services/data-streaming_data/rest/data",
+    "http://103.193.14.22:8090/iserver/services/data-streaming_data-2/rest/data",
     sqlParam
   );
 
@@ -85,12 +86,11 @@ async function getRealtimeData() {
   };
   for (const feature of features.features) {
     const realtimeFeature = await getFeaturesBySQLPromise(
-      "http://103.193.14.22:8090/iserver/services/data-streaming_data/rest/data",
+      "http://103.193.14.22:8090/iserver/services/data-streaming_data-2/rest/data",
       new SuperMap.GetFeaturesBySQLParameters({
         queryParameter: {
           name: "loader_utm@streaming",
-          attributeFilter: `loader_id = '${feature.properties.LOADER_ID}'`,
-          orderBy: "SmID DESC",
+          attributeFilter: `SmID = '${feature.properties.ID}'`,
         },
         maxFeatures: 1,
         toIndex: 999999,
@@ -101,23 +101,22 @@ async function getRealtimeData() {
     if (
       !Object.prototype.hasOwnProperty.call(
         turfBoundaries,
-        feature.properties.LOADER_ID
+        feature.properties.loader_id
       )
     ) {
       const boundaryFeature = await getFeaturesBySQLPromise(
-        "http://103.193.14.22:8090/iserver/services/data-streaming_data/rest/data",
+        "http://103.193.14.22:8090/iserver/services/data-streaming_data-2/rest/data",
         new SuperMap.GetFeaturesBySQLParameters({
           queryParameter: {
             name: "boundary@streaming",
-            attributeFilter: `Loader = '${feature.properties.LOADER_ID}'`,
-            orderBy: "SmID DESC",
+            attributeFilter: `Loader = '${feature.properties.loader_id}'`,
           },
           maxFeatures: 1,
           toIndex: 999999,
           datasetNames: ["streaming:boundary"],
         })
       );
-      turfBoundaries[feature.properties.LOADER_ID] = turf.polygon(
+      turfBoundaries[feature.properties.loader_id] = turf.polygon(
         boundaryFeature.features[0].geometry.coordinates[0]
       );
       L.geoJSON(boundaryFeature, {
@@ -132,7 +131,7 @@ async function getRealtimeData() {
     realtimeFeature.features[0].properties["isInBoundary"] =
       turf.booleanPointInPolygon(
         turf.point(realtimeFeature.features[0].geometry.coordinates),
-        turfBoundaries[feature.properties.LOADER_ID]
+        turfBoundaries[feature.properties.loader_id]
       );
 
     realtimeFeatures.features.push(realtimeFeature.features[0]);
@@ -182,7 +181,7 @@ async function start() {
     imageryLayer = L.supermap.tiledMapLayer(url);
     imageryLayer.addTo(map);
     getRealtimeData();
-    setInterval(getRealtimeData, 1000 * 60);
+    // setInterval(getRealtimeData, 1000 * 60);
     showCoords();
   } catch (e) {
     console.error(e);
