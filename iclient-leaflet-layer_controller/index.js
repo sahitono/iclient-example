@@ -59,6 +59,51 @@ let map;
 let resultLayer;
 let imageryLayer;
 
+const layerManager = {};
+function toggleLayer(layerName) {
+  layerManager[layerName].active = !layerManager[layerName].active;
+  if (layerManager[layerName].active) {
+    layerManager[layerName].layer.addTo(map);
+  } else {
+    map.removeLayer(layerManager[layerName].layer);
+  }
+}
+
+function zoomToLayer(layerName) {
+  map.fitBounds(layerManager[layerName].layer.getBounds());
+}
+
+function addLayer(layerName, layer) {
+  const layerItem = document.createElement("li");
+  layerItem.classList = ["list-group-item"];
+  layerItem.id = layerName;
+
+  const checkboxes = document.createElement("input");
+  checkboxes.classList = ["form-check-input"];
+  checkboxes.type = "checkbox";
+  checkboxes.checked = true;
+  layerItem.appendChild(checkboxes);
+
+  const buttonLayer = document.createElement("button");
+  buttonLayer.style = "padding: 0rem 0rem";
+  buttonLayer.classList = ["btn btn-link"];
+  buttonLayer.innerText = layerName;
+  layerItem.appendChild(buttonLayer);
+
+  layerManager[layerName] = {
+    active: true,
+    layer,
+  };
+  checkboxes.addEventListener("click", () => {
+    toggleLayer(layerName);
+  });
+  buttonLayer.addEventListener("click", () => {
+    zoomToLayer(layerName);
+  });
+  layer.addTo(map);
+  document.getElementById("layer-list").appendChild(layerItem);
+}
+
 async function start() {
   try {
     const res = await fetch(
@@ -80,28 +125,36 @@ async function start() {
       zoom: 5,
     });
 
-    const sqlParam = new SuperMap.GetFeaturesBySQLParameters({
-      queryParameter: {
-        name: "T2112_Desain_Pit_MTBUL@pama_mtbu",
-        attributeFilter: "1=1",
-      },
-      datasetNames: ["pama_mtbu:T2112_Desain_Pit_MTBUL"],
-    });
-    const features = await getFeaturesBySQLPromise(sqlParam);
-
-    resultLayer = L.geoJSON(features);
-    resultLayer.addTo(map).bindPopup("Date_User");
+    // resultLayer.addTo(map).bindPopup("Date_User");
 
     imageryLayer = L.supermap.tiledMapLayer(url);
     imageryLayer.addTo(map);
 
-    L.control
-      .layers(
-        { image: imageryLayer },
-        { mtbu: resultLayer },
-        { collapsed: false }
-      )
-      .addTo(map);
+    const desainPitFeatures = await getFeaturesBySQLPromise(
+      new SuperMap.GetFeaturesBySQLParameters({
+        queryParameter: {
+          name: "T2112_Desain_Pit_MTBUL@pama_mtbu",
+          attributeFilter: "1=1",
+        },
+        datasetNames: ["pama_mtbu:T2112_Desain_Pit_MTBUL"],
+      })
+    );
+
+    const desainPitLayer = L.geoJSON(desainPitFeatures);
+    addLayer("T2112_Desain_Pit_MTBUL", desainPitLayer);
+
+    const desainPitTFeatures = await getFeaturesBySQLPromise(
+      new SuperMap.GetFeaturesBySQLParameters({
+        queryParameter: {
+          name: "T2112_Desain_Pit_MTBUT@pama_mtbu",
+          attributeFilter: "1=1",
+        },
+        datasetNames: ["pama_mtbu:T2112_Desain_Pit_MTBUT"],
+      })
+    );
+
+    const desainPitTLayer = L.geoJSON(desainPitTFeatures);
+    addLayer("T2112_Desain_Pit_MTBUT", desainPitTLayer);
 
     showCoords();
   } catch (error) {
